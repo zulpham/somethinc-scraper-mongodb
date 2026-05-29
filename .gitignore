@@ -1,0 +1,18 @@
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+
+# Log File & Local Config
+*.log
+.DS_Store
+
+# Transit file
+urls_raw.json
+payloads_clean.json
