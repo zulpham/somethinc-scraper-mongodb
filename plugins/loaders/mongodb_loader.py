@@ -33,15 +33,28 @@ def run_loader(staging_dir, payload_file):
         collection = db["somethinc_products"]
         logging.info("Connected to MongoDB")
         
-        logging.info("Insert data to MongoDB...")
-        result = collection.insert_many(payloads)
-        logging.info(f"[INJECTING SUCCESS] Inserted: {len(result.inserted_ids)} documents")
+        logging.info("Upsert data to MongoDB...")
+        # Bulk Upsert
+        operations = []
+        for payload in payloads:
+            # Use product url as natural key
+            op = UpdateOne(
+                filter={"product_url": payload["product_url"]},
+                update={"$set",payload},
+                upsert=True
+            )
+            operations.append(op)
+            
+        if operations:
+            result = collection.bulk_write(operations)
+        logging.info(f"[INJECTING SUCCESS] Upserted: {result.upserted_count} documents\r\nModified: {result.modified_count} documents")
         
     except ConnectionFailure as cf:
         logging.error(f"[CONNECTION ERROR] Can't connect to MongoDB: {cf}")
         raise
     except Exception as e:
         logging.error(f"[ERROR] {e}")
+        raise
         
     finally:
         if 'client' in locals():
