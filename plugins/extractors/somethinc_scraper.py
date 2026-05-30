@@ -20,7 +20,7 @@ def run_scraper(staging_dir, url_file, payload_file):
         url_list = json.load(f)
         
     # Try with 5 products
-    product_urls = url_list[:5]
+    product_urls = url_list
     payloads = []
     
     with sync_playwright() as p:
