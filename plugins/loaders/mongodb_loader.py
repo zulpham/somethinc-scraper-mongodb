@@ -3,7 +3,7 @@ import os
 import logging
 
 from airflow.hooks.base import BaseHook
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from pymongo.errors import ConnectionFailure
 
 def run_loader(staging_dir, payload_file):
