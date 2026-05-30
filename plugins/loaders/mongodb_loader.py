@@ -40,7 +40,7 @@ def run_loader(staging_dir, payload_file):
             # Use product url as natural key
             op = UpdateOne(
                 filter={"product_url": payload["product_url"]},
-                update={"$set",payload},
+                update={"$set": payload},
                 upsert=True
             )
             operations.append(op)
