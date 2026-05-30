@@ -27,7 +27,7 @@ with DAG(
     schedule='0 2 * * *',
     start_date=datetime(2026, 5, 27),
     catchup=False,
-    tags=['scrapping','retail','e-commerce']
+    tags=['scraping','retail','e-commerce']
 ) as dag:
     
     # Task 1: Crawl

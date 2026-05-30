@@ -78,10 +78,11 @@ def run_scraper(staging_dir, url_file, payload_file):
                     "timestamp" : datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                 }
                 payloads.append(payload)
-                logging.info(f"{raw_price}")
+
             except Exception as e:
                 logging.error(f"[ERROR] page: {product_url}\r\n{e}")
                 continue
+            
             finally:
                 if 'page' in locals() and not page.is_closed():
                     page.close()
