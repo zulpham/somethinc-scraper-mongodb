@@ -33,7 +33,7 @@ def run_crawler(staging_dir, url_file):
             try:
                 response = page.goto(current_url,timeout=60000,wait_until="domcontentloaded")
                 # Stop looping if 404
-                if response.code == 404:
+                if response.status == 404:
                     break
                 page.wait_for_timeout(5000)
             
