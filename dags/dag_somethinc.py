@@ -34,7 +34,12 @@ with DAG(
     crawl_task = PythonOperator(
         task_id='crawl_catalog',
         python_callable=run_crawler,
-        op_kwargs={'staging_dir':STAGING_DIR,'url_file':URL_FILE}
+        op_kwargs={
+            'staging_dir': STAGING_DIR,
+            'url_file': URL_FILE,
+            'storage_backend': 'obj_storage',
+            'bucket_name': 'retail-lake'
+        }
     )
     
     # Task 2: Scrape
