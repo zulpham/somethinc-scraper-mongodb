@@ -49,7 +49,9 @@ with DAG(
         op_kwargs={
             'staging_dir':STAGING_DIR,
             'url_file':URL_FILE,    
-            'payload_file':PAYLOAD_FILE
+            'payload_file':PAYLOAD_FILE,
+            'storage_backend': 'obj_storage',
+            'bucket_name': 'retail-lake'
         }
     )
     

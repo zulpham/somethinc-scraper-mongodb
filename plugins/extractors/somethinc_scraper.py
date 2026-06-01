@@ -4,23 +4,43 @@ import re
 import time
 import logging
 import random
+import boto3
 
+from airflow.hooks.base import BaseHook
 from datetime import datetime,timezone
 from playwright.sync_api import sync_playwright
 
-def run_scraper(staging_dir, url_file, payload_file):
-    logging.info(f"[SCRAPING] read URLs from {staging_dir}")
-    url_file = os.path.join(staging_dir, url_file)
-    payload_file = os.path.join(staging_dir, payload_file)
-    
-    if not os.path.exists(url_file):
-        raise FileNotFoundError(f"{url_file} not found!!")
-    
-    with open(url_file, 'r') as f:
-        url_list = json.load(f)
+def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bucket_name="retail-lake"):
+    if storage_backend == "obj_storage":
+        conn = BaseHook.get_connection('minio_s3_conn')
+        s3_client = boto3.client(
+            's3',
+            endpoint_url=conn.host,
+            aws_access_key_id=conn.login,
+            aws_secret_access_key=conn.password
+        )
+        try:
+            logging.info(f"[SCRAPING] read URLs from bucket: {bucket_name}")
+            s3_client.get_object(Bucket=bucket_name,Key=url_file)
+            product_urls = json.loads(response['Body'].read().decode('utf-8'))
         
-    # Try with 5 products
-    product_urls = url_list
+        except Exception as e:
+            raise Exception(f"Fail to read file from Object Storage: {e}")
+    
+    else:
+        url_file = os.path.join(staging_dir, url_file)
+
+        if not os.path.exists(url_file):
+            raise FileNotFoundError(f"{url_file} not found!!")
+    
+        with open(url_file, 'r') as f:
+            product_urls = json.load(f)
+    
+    if not product_urls:
+        logging.error("No URL to extract")
+        raise
+    
+    # create list for payload
     payloads = []
     
     with sync_playwright() as p:
@@ -92,10 +112,22 @@ def run_scraper(staging_dir, url_file, payload_file):
         
         browser.close()
     
-    with open(payload_file, 'w') as f:
-        json.dump(payloads,f)
+    if not payloads:
+        logging.error("Payloads is empty")
+        raise
     
-    logging.info(f"[SCRAPING SUCCESS] {len(payloads)} has saved at {payload_file}")
+    if storage_backend == "obj_storage":
+        json_data = json.dumps(payloads)
+        s3_client.put_object(Bucket=bucket_name, Key=payload_file, Body=json_data)
+        logging.info(f"[SUCCESS] payload saved at s3://{bucket_name}/{payload_file}")
+    
+    else:
+        payload_file = os.path.join(staging_dir, payload_file)
+        with open(payload_file, 'w') as f:
+            json.dump(payloads,f)
+            logging.info(f"[SUCCESS] payload saved at {payload_file}")
+    
+    logging.info(f"=== [SCRAPING SUCCESS] ===")
                      
                     
          
