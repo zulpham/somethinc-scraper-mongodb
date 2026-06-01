@@ -21,7 +21,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
         )
         try:
             logging.info(f"[SCRAPING] read URLs from bucket: {bucket_name}")
-            s3_client.get_object(Bucket=bucket_name,Key=url_file)
+            response = s3_client.get_object(Bucket=bucket_name,Key=url_file)
             product_urls = json.loads(response['Body'].read().decode('utf-8'))
         
         except Exception as e:
