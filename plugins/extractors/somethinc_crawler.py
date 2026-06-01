@@ -76,7 +76,7 @@ def run_crawler(staging_dir, url_file, storage_backend="local", bucket_name="ret
                 aws_secret_access_key=conn.password
             )
         
-            json_data = json.dump(url_list)
+            json_data = json.dumps(url_list)
             s3_client.put_object(Bucket=bucket_name, Key=url_file, Body=json_data)
             logging.info(f"[SUCCESS] {len(url_list)} URLs saved to s3://{bucket_name}/{url_file}")
             
