@@ -59,7 +59,12 @@ with DAG(
     inject_task = PythonOperator(
         task_id='inject_to_mongodb',
         python_callable=run_loader,
-        op_kwargs={'staging_dir':STAGING_DIR,'payload_file':PAYLOAD_FILE}
+        op_kwargs={
+            'staging_dir':STAGING_DIR,
+            'payload_file':PAYLOAD_FILE,
+            'storage_backend': 'obj_storage',
+            'bucket_name': 'retail-lake'
+        }
     )
     
     # Orchestration Rule

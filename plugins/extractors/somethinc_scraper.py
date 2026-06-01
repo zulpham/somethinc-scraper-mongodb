@@ -29,6 +29,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
     
     else:
         url_file = os.path.join(staging_dir, url_file)
+        logging.info(f"[SCRAPING] Read URLs from {url_file}")
 
         if not os.path.exists(url_file):
             raise FileNotFoundError(f"{url_file} not found!!")
