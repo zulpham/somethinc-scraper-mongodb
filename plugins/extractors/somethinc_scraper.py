@@ -60,7 +60,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
         finally:
             init_page.close()
             
-        for index,product_url in enumerate(product_urls, start=1):
+        for index,product_url in enumerate(product_urls[94:], start=1):
             logging.info(f"Extracting... {index}/{len(product_urls)}: {product_url}")
             
             try:
@@ -121,12 +121,12 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                                 break
                             except Exception:
                                 continue
-                    int_price = 0
+                    int_price = None
                     if raw_price:
                         only_number = re.sub(r"[^\d]","",raw_price)   
                         if only_number: int_price = int(only_number)
                         
-                    var_stock = int(page.locator("div.cart-div-qty input.form-control-custom").first.get_attribute("data-max") or 0)
+                    var_stock = int(page.locator("div.cart-div-qty input.form-control-custom").first.get_attribute("data-max", timeout=5000) or 0)
                     
                     payload["variants"].append({
                         "name":clean_name,
