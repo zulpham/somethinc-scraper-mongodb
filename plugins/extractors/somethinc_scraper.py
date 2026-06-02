@@ -126,7 +126,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                         only_number = re.sub(r"[^\d]","",raw_price)   
                         if only_number: int_price = int(only_number)
                         
-                    var_stock = int(page.locator(div.cart-div-qty input.form-control-custom).first.get_attribute("data-max") or 0)
+                    var_stock = int(page.locator("div.cart-div-qty input.form-control-custom").first.get_attribute("data-max") or 0)
                     
                     payload["variants"].append({
                         "name":clean_name,
