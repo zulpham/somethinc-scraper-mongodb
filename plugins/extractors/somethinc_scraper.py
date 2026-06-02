@@ -85,8 +85,8 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                 }
                 
                 # Get attributes from variants
-                size_elements = page.locator(div.select-overlay-variant).all()
-                color_elements = page.locator(div.select-overlay-color).all()
+                size_elements = page.locator("div.select-overlay-variant").all()
+                color_elements = page.locator("div.select-overlay-color").all()
                 
                 # Add variants into payload
                 if size_elements:
