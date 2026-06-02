@@ -59,8 +59,12 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
             logging.info(f"Fail to change currency: {e}")
         finally:
             init_page.close()
-            
-        for index,product_url in enumerate(product_urls[94:], start=1):
+        
+        # Circuit Breaker
+        consecutive_errors = 0
+        max_consecutive_errors = 7
+        
+        for index,product_url in enumerate(product_urls[:10], start=1):
             logging.info(f"Extracting... {index}/{len(product_urls)}: {product_url}")
             
             try:
@@ -70,7 +74,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
             
                 try:
                     # Extract product name
-                    raw_name = page.locator("h1.text-xxl").first.inner_text(timeout=3000)
+                    raw_name = page.locator("h1.text-xxlx").first.inner_text(timeout=3000)
                     clean_name = raw_name.strip()
                 
                 except Exception:
@@ -125,16 +129,32 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                     if raw_price:
                         only_number = re.sub(r"[^\d]","",raw_price)   
                         if only_number: int_price = int(only_number)
-                        
-                    var_stock = int(page.locator("div.cart-div-qty input.form-control-custom").first.get_attribute("data-max", timeout=5000) or 0)
+                    
+                    
+                    try:
+                        var_stock = int(page.locator("div.cart-div-qty input.form-control-custom").first.get_attribute("data-max", timeout=5000))
+                    except Exception:
+                        var_stock = 0
                     
                     payload["variants"].append({
+                        "type": "single",
                         "name":clean_name,
                         "price":int_price,
                         "stock": var_stock
                     })
                     
                 payloads.append(payload)
+                
+                # check payload
+                is_price_invalid = not payload["variants"] or all(v.get("price") in [0, None] for v in payload["variants"])
+                if clean_name == "UNKNOWN" or is_price_invalid:
+                    consecutive_errors += 1
+                    
+                    if consecutive_errors >= max_consecutive_errors:
+                        raise Exception("FAILED to extract 7 times in arrow, CSS may change")
+                
+                else:
+                    consecutive_errors = 0
 
             except Exception as e:
                 logging.error(f"[ERROR] page: {product_url}\r\n{e}")
@@ -151,7 +171,19 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
     
     if not payloads:
         logging.error("Payloads is empty")
-        raise
+        raise Exception("FAILED")
+        
+    total_extracted = len(payloads)
+    unknown_count = sum(
+        1 for p in payloads
+        if p["product_name"] == "UNKNOWN" or not p["variants"] or all(v.get("price") in [0,None] for v in p["variants"])
+    )
+    error_rate = (unknown_count/total_extracted)
+    logging.info(f"Data Quality: {error_rate * 100}% invalid data from {total_extracted} data")
+    
+    # Raise Exception if error rate more than 10%
+    if error_rate > 0.10:
+        raise Exception(f"DATA QUALITY FAILED: error rate more than 10%")
     
     if storage_backend == "obj_storage":
         json_data = json.dumps(payloads)
