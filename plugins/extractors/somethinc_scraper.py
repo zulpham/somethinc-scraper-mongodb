@@ -64,7 +64,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
         consecutive_errors = 0
         max_consecutive_errors = 7
         
-        for index,product_url in enumerate(product_urls[:10], start=1):
+        for index,product_url in enumerate(product_urls, start=1):
             logging.info(f"Extracting... {index}/{len(product_urls)}: {product_url}")
             
             try:
@@ -74,7 +74,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
             
                 try:
                     # Extract product name
-                    raw_name = page.locator("h1.text-xxlx").first.inner_text(timeout=3000)
+                    raw_name = page.locator("h1.text-xxl").first.inner_text(timeout=3000)
                     clean_name = raw_name.strip()
                 
                 except Exception:
@@ -147,17 +147,17 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                 
                 # check payload
                 is_price_invalid = not payload["variants"] or all(v.get("price") in [0, None] for v in payload["variants"])
+                
                 if clean_name == "UNKNOWN" or is_price_invalid:
                     consecutive_errors += 1
-                    
-                    if consecutive_errors >= max_consecutive_errors:
-                        raise Exception("FAILED to extract 7 times in arrow, CSS may change")
                 
                 else:
                     consecutive_errors = 0
 
             except Exception as e:
                 logging.error(f"[ERROR] page: {product_url}\r\n{e}")
+                if consecutive_errors >= max_consecutive_errors:
+                    raise Exception("FAILED to extract 7 times in arrow, CSS may change")
                 continue
             
             finally:
@@ -179,7 +179,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
         if p["product_name"] == "UNKNOWN" or not p["variants"] or all(v.get("price") in [0,None] for v in p["variants"])
     )
     error_rate = (unknown_count/total_extracted)
-    logging.info(f"Data Quality: {error_rate * 100}% invalid data from {total_extracted} data")
+    logging.info(f"Data Quality: {int(error_rate * 100)}% invalid data from {total_extracted} data")
     
     # Raise Exception if error rate more than 10%
     if error_rate > 0.10:
