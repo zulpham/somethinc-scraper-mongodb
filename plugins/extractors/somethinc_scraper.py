@@ -111,7 +111,7 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                             "stock": int(color_elem.get_attribute("data-max") or 0)
                         })
                         
-                else:
+                if not size_elements and not color_elements:
                     raw_price = ""
                     for selector in ["div.price span.text-lg","div.price small.text-lg"]:
                         locator = page.locator(selector).first
