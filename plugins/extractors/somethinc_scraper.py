@@ -76,28 +76,64 @@ def run_scraper(staging_dir, url_file, payload_file, storage_backend="local", bu
                 except Exception:
                     clean_name = "UNKNOWN"
                     
-                    # Extract product price
-                raw_price = ""
-                for selector in ["div.price span.text-lg","div.price small.text-lg"]:
-                    locator = page.locator(selector).first
-                    if locator.count() > 0:
-                        try:
-                            raw_price = locator.inner_text(timeout=3000)
-                            break
-                        except Exception:
-                            continue
-                int_price = None
-                if raw_price:
-                    only_number = re.sub(r"[^\d]","",raw_price)   
-                    if only_number: int_price = int(only_number)
-                    
                 # Create payload
                 payload = {
-                    "product_name" : clean_name,
-                    "product_price" : int_price,
-                    "product_url" : product_url,
-                    "timestamp" : datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    "product_url": product_url,
+                    "product_name": clean_name,
+                    "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "variants": []
                 }
+                
+                # Get attributes from variants
+                size_elements = page.locator(div.select-overlay-variant).all()
+                color_elements = page.locator(div.select-overlay-color).all()
+                
+                # Add variants into payload
+                if size_elements:
+                    for size_elem in size_elements:
+                        payload["variants"].append({
+                            "type": "size",
+                            "name": size_elem.inner_text().strip() or "Unknown",
+                            "price": int(size_elem.get_attribute("data-price") or 0),
+                            "sale_price": int(size_elem.get_attribute("data-saleprice") or 0),
+                            "is_sale": size_elem.get_attribute("data-sale") == "1",
+                            "stock": int(size_elem.get_attribute("data-max") or 0)
+                        })
+                
+                if color_elements:
+                    for color_elem in color_elements:
+                        payload["variants"].append({
+                            "type": "color",
+                            "name": color_elem.get_attribute("data-title") or "Unknown",
+                            "price": int(color_elem.get_attribute("data-price") or 0),
+                            "sale_price": int(color_elem.get_attribute("data-saleprice") or 0),
+                            "is_sale": color_elem.get_attribute("data-sale") == "1",
+                            "stock": int(color_elem.get_attribute("data-max") or 0)
+                        })
+                        
+                else:
+                    raw_price = ""
+                    for selector in ["div.price span.text-lg","div.price small.text-lg"]:
+                        locator = page.locator(selector).first
+                        if locator.count() > 0:
+                            try:
+                                raw_price = locator.inner_text(timeout=3000)
+                                break
+                            except Exception:
+                                continue
+                    int_price = 0
+                    if raw_price:
+                        only_number = re.sub(r"[^\d]","",raw_price)   
+                        if only_number: int_price = int(only_number)
+                        
+                    var_stock = int(page.locator(div.cart-div-qty input.form-control-custom).first.get_attribute("data-max") or 0)
+                    
+                    payload["variants"].append({
+                        "name":clean_name,
+                        "price":int_price,
+                        "stock": var_stock
+                    })
+                    
                 payloads.append(payload)
 
             except Exception as e:
